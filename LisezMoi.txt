@@ -1,0 +1,11 @@
+__________
+22/08/2016:
+Le script "essai_TM_AMF_1.R" édite un fichier excel basé sur un dataframe (édité par ce même script).
+Il reste une exception au niveau de la dernière ligne qui affiche NA sur le montant de l'opération.
+Aussi, nous avons plusieurs warnings concernant la lecture des fichiers .txt, typiquement le caractère
+de fin de fichier.
+il contient les rechercheSociete,...
+
+Le script "essai_TM_2.R" édite un dataframe contenant les info.
+Il devrait régler, dans sa version plus général que la version_1, le problème des opérations multiples
+dans un même communiqué.
