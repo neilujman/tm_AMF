@@ -50,11 +50,11 @@ if ((system_date %>% as.character(.) %>% as.POSIXlt(.) %>% .$wday) == 1) {
     start_date <-
         format(system_date - 3, "%d/%m/%Y") %>% strsplit(., "/") %>% unlist(.) #last Friday
     end_date <-
-        format(system_date, "%d/%m/%Y") %>% strsplit(., "/") %>% unlist(.) #yesterday
+        format(system_date, "%d/%m/%Y") %>% strsplit(., "/") %>% unlist(.) #today
 } else {
     start_date <-
         format(system_date - 1, "%d/%m/%Y") %>% strsplit(., "/") %>% unlist(.) #yesterday
-    end_date <- start_date %>% strsplit(., "/") %>% unlist(.)
+    end_date <- format(system_date, "%d/%m/%Y") %>% strsplit(., "/") %>% unlist(.) #today
 }
 
 amf_base_url <- "http://www.amf-france.org"
@@ -174,7 +174,7 @@ if (!(seuils_current_page_results_number <= 0 |
                     mode = "wb",
                     quiet = TRUE
                 )))
-            
+            docs_id_seuils <- append(docs_id_seuils, document_numbers)
         }    
         
         seuils_current_page_number <- seuils_current_page_number + 1
@@ -185,7 +185,7 @@ if (!(seuils_current_page_results_number <= 0 |
             amf_seuils_url <-
                 jump_to(amf_seuils_session, amf_seuils_nodes)$response$url
         }
-        docs_id_seuils <- append(docs_id_seuils, document_numbers)
+        
     }# end while seuils
 }
 
@@ -299,34 +299,35 @@ if (!(decla_current_page_results_number <= 0 |
             jumpman <- jumpman[kept_ind]
             document_numbers <- document_numbers[kept_ind]
             document_titles <- document_titles[kept_ind]
-        # document_numbers <-
-        #   sapply(1:length(amf_decla_nodes), function(x)
-        #     amf_decla_nodes[x] %>% strsplit(., " ")) %>% sapply(1:length(.), function(x)
-        #       .[[x]][4] %>% sub("\\n.+", "", .))
-        
-        #fetching all links of results in the page
-        #fetching direct links
-        jumpman <-
-            sapply(jumpman, function(x)
-                x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .))
-        
-        #fix case where more than one pdf are present
-        if(is.matrix(jumpman))
-            jumpman %<>% .[1,]
-        
-        #creates the directory
-        date_path <- paste0("./data/AMF_16h30/", today, "/declaration")
-        #date_path <- paste0("./data/decla/", today, "")
-        if (!isTRUE(file.info(date_path)$isdir)) 
-            dir.create(date_path, recursive=TRUE)
-        
-        invisible(sapply(1:length(jumpman), function(x)
-            download.file(
-                jumpman[[x]][1],
-                paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
-                mode = "wb",
-                quiet = TRUE
-            )))
+            # document_numbers <-
+            #   sapply(1:length(amf_decla_nodes), function(x)
+            #     amf_decla_nodes[x] %>% strsplit(., " ")) %>% sapply(1:length(.), function(x)
+            #       .[[x]][4] %>% sub("\\n.+", "", .))
+            
+            #fetching all links of results in the page
+            #fetching direct links
+            jumpman <-
+                sapply(jumpman, function(x)
+                    x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .))
+            
+            #fix case where more than one pdf are present
+            if(is.matrix(jumpman))
+                jumpman %<>% .[1,]
+            
+            #creates the directory
+            date_path <- paste0("./data/AMF_16h30/", today, "/declaration")
+            #date_path <- paste0("./data/decla/", today, "")
+            if (!isTRUE(file.info(date_path)$isdir)) 
+                dir.create(date_path, recursive=TRUE)
+            
+            invisible(sapply(1:length(jumpman), function(x)
+                download.file(
+                    jumpman[[x]][1],
+                    paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
+                    mode = "wb",
+                    quiet = TRUE
+                )))
+            docs_id_decla <- append(docs_id_decla, document_numbers)
         }
         decla_current_page_number <- decla_current_page_number + 1
         
@@ -336,7 +337,7 @@ if (!(decla_current_page_results_number <= 0 |
             amf_decla_url <-
                 jump_to(amf_decla_session, amf_decla_nodes)$response$url
         }
-        docs_id_decla <- append(docs_id_decla, document_numbers)
+        
     } # end while decla = declaration des dirigeants
 }
 
@@ -451,34 +452,35 @@ if (!(opa_current_page_results_number <= 0 |
             jumpman <- jumpman[kept_ind]
             document_numbers <- document_numbers[kept_ind]
             document_titles <- document_titles[kept_ind]
-        # document_numbers <-
-        #   sapply(1:length(amf_opa_nodes), function(x)
-        #     amf_opa_nodes[x] %>% strsplit(., " ")) %>% sapply(1:length(.), function(x)
-        #       .[[x]][4] %>% sub("\\n.+", "", .))
-        
-        #fetching all links of results in the page
-        #fetching direct links
-        jumpman <-
-            sapply(jumpman, function(x)
-                x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .))
-        
-        #fix case where more than one pdf are present
-        if(is.matrix(jumpman))
-            jumpman %<>% .[1,]
-        
-        #creates the directory
-        date_path <- paste0("./data/AMF_16h30/", today, "/OPA")
-        #date_path <- paste0("./data/opa/", today, "")
-        if (!isTRUE(file.info(date_path)$isdir)) 
-            dir.create(date_path, recursive=TRUE)
-        
-        invisible(sapply(1:length(jumpman), function(x)
-            download.file(
-                jumpman[[x]][1],
-                paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
-                mode = "wb",
-                quiet = TRUE
-            )))
+            # document_numbers <-
+            #   sapply(1:length(amf_opa_nodes), function(x)
+            #     amf_opa_nodes[x] %>% strsplit(., " ")) %>% sapply(1:length(.), function(x)
+            #       .[[x]][4] %>% sub("\\n.+", "", .))
+            
+            #fetching all links of results in the page
+            #fetching direct links
+            jumpman <-
+                sapply(jumpman, function(x)
+                    x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .))
+            
+            #fix case where more than one pdf are present
+            if(is.matrix(jumpman))
+                jumpman %<>% .[1,]
+            
+            #creates the directory
+            date_path <- paste0("./data/AMF_16h30/", today, "/OPA")
+            #date_path <- paste0("./data/opa/", today, "")
+            if (!isTRUE(file.info(date_path)$isdir)) 
+                dir.create(date_path, recursive=TRUE)
+            
+            invisible(sapply(1:length(jumpman), function(x)
+                download.file(
+                    jumpman[[x]][1],
+                    paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
+                    mode = "wb",
+                    quiet = TRUE
+                )))
+            docs_id_opa <- append(docs_id_opa, document_numbers)
         }
         opa_current_page_number <- opa_current_page_number + 1
         
@@ -488,7 +490,7 @@ if (!(opa_current_page_results_number <= 0 |
             amf_opa_url <-
                 jump_to(amf_opa_session, amf_opa_nodes)$response$url
         }
-        docs_id_opa <- append(docs_id_opa, document_numbers)
+        
     } # end while opa
 }
 
@@ -624,7 +626,7 @@ if (!(prospectus_current_page_results_number <= 0 |
                     mode = "wb",
                     quiet = TRUE
                 )))
-            
+            docs_id_prospectus <- append(docs_id_prospectus, document_numbers)
         }    
         
         prospectus_current_page_number <- prospectus_current_page_number + 1
@@ -635,7 +637,7 @@ if (!(prospectus_current_page_results_number <= 0 |
             amf_prospectus_url <-
                 jump_to(amf_prospectus_session, amf_prospectus_nodes)$response$url
         }
-        docs_id_prospectus <- append(docs_id_prospectus, document_numbers)
+        
     }# end while prospectus
 }
 

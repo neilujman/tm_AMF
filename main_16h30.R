@@ -1,0 +1,5 @@
+setwd("C:\\Users\\jriton\\Documents\\R\\MesProjets\\AMF_textmining\\tm_declaration")
+source(file = "scrap_16h30.R", encoding = "UTF-8")
+source(file = "convert-layout_16h30.R", encoding = "UTF-8")
+source(file = "mine-layout_16h30.R", encoding = "UTF-8")
+source(file = "excel_16h30.R", encoding = "UTF-8")
