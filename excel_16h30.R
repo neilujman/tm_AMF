@@ -20,7 +20,7 @@ seuil.sheet <- sheets[[2]]  # with df result_seuil from mine-layout_16h30.R
 publi.sheet <- sheets[[3]]  # with df result_publi from mine-layout_16h30.R
 opa.sheet <- sheets[[4]]    # with df result_opa from mine-layout_16h30.R
 
-if(is.element("result_decla",ls())){
+if(NROW(extractedTexts_modele2) > 0){
     # partie declaration des dirigeants
     nbLigne <- decla.sheet$getLastRowNum()+1
     nbLigne.today <- dim(result_decla)[1]
@@ -36,14 +36,14 @@ if(is.element("result_decla",ls())){
     setCellValue(ligne.titre[[3]], "Déclarant")
     setCellValue(ligne.titre[[4]], "Instrument financier")
     setCellValue(ligne.titre[[5]], "Nature")
-    setCellValue(ligne.titre[[6]], "Montant de l'opération")
+    setCellValue(ligne.titre[[6]], "Montant de l'opération (€)")
     setCellValue(ligne.titre[[7]], "Date de l'opération")
     setCellValue(ligne.titre[[8]], "Lien Dropbox")
     invisible(sapply(c(1,8), function(i){
-        setCellStyle(ligne.titre[[i]], CellStyle(wb)+Alignment(h="ALIGN_CENTER", v="VERTICAL_CENTER")+Font(wb, isItalic=TRUE, isBold=TRUE))
+        setCellStyle(ligne.titre[[i]], CellStyle(wb)+Alignment(h="ALIGN_CENTER", v="VERTICAL_CENTER", wrapText = T)+Font(wb, isItalic=TRUE, isBold=TRUE))
     }))
     invisible(sapply(2:7, function(i){
-        setCellStyle(ligne.titre[[i]], CellStyle(wb)+Alignment(h="ALIGN_CENTER", v="VERTICAL_CENTER")+Font(wb, isItalic=TRUE, isBold=TRUE, color = "whitesmoke")+ Fill(foregroundColor = "#4F81BD"))
+        setCellStyle(ligne.titre[[i]], CellStyle(wb)+Alignment(h="ALIGN_CENTER", v="VERTICAL_CENTER", wrapText = T)+Font(wb, isItalic=TRUE, isBold=TRUE, color = "whitesmoke")+ Fill(foregroundColor = "#4F81BD"))
     }))
     setRowHeight(getRows(decla.sheet,1), multiplier = 2)
     
@@ -60,14 +60,10 @@ if(is.element("result_decla",ls())){
     setColumnWidth(decla.sheet, colIndex=8, colWidth=25)
     
     
-    
-    
-    
-    
     font.red <- Font(wb, color = "#C60800")
     font.green <- Font(wb, color = "darkgreen")
-    fill.white <- Fill(foregroundColor = "#F4FEFE", backgroundColor = "#F4FEFE")
-    fill.blue <- Fill(foregroundColor = "#C5D9F1") 
+    fill.white <- Fill(foregroundColor = "#FFFFFF", backgroundColor = "#FFFFFF")
+    fill.blue <- Fill(foregroundColor = "#DCE6F1") 
     fill.red <- Fill(backgroundColor = "#FF0000")
     dataformat.nombre <- DataFormat("### ### ##0")
     dataformat.date <- DataFormat("dd/mm/yyyy")
@@ -79,7 +75,22 @@ if(is.element("result_decla",ls())){
     cs <- CellStyle(wb)
     invisible(sapply(2:(nbLigne.today+1), function(i){
         cells <- getCells(row = getRows(decla.sheet, rowIndex = i), colIndex = 1:8)
-        cs.2 <- if(i%%2==0) cs +  fill.blue + border.left + alignment.left else cs + fill.white + border.left + alignment.left
+        cs.2 <- if(i%%2==0) {
+            cs +  fill.blue + border.left + alignment.left + switch(
+                EXPR = getCellValue(cells[[5]]),
+                "Acquisition" = {Font(wb, isBold = T, color = "darkgreen")},
+                "Cession" = {Font(wb, isBold = T, color = "#C60800")},
+                {}
+            )
+        }
+        else {
+            cs + fill.white + border.left + alignment.left + switch(
+                EXPR = getCellValue(cells[[5]]),
+                "Acquisition" = {Font(wb, isBold = T, color = "darkgreen")},
+                "Cession" = {Font(wb, isBold = T, color = "#C60800")},
+                {}
+            )
+        }
         setCellStyle(cells[[2]], cs.2)
         cs.3 <- if(i%%2==0) cs + fill.blue + border.middle + alignment.left else cs + fill.white + border.middle + alignment.left
         setCellStyle(cells[[3]], cs.3)
@@ -114,8 +125,7 @@ if(is.element("result_decla",ls())){
 }
 
 
-
-if(is.element("result_seuil",ls())){
+if(NROW(extractedTexts_franchissement) > 0){
     # partie seuil
     nbLigne <- seuil.sheet$getLastRowNum()+1
     nbLigne.today <- dim(result_seuil)[1]
@@ -187,7 +197,7 @@ if(is.element("result_seuil",ls())){
 # PUBLICATION DE POSITION
 # ===============================
 # ===============================
-if(is.element("result_publi",ls())){
+if(NROW(extractedTexts_position) > 0){
     nbLigne <- publi.sheet$getLastRowNum()+1
     nbLigne.today <- dim(result_publi)[1]
     publi.sheet$shiftRows(as.integer(1),as.integer(nbLigne-1),as.integer(nbLigne.today))
@@ -200,14 +210,22 @@ if(is.element("result_publi",ls())){
     
     cb.titre <- CellBlock(publi.sheet, 1, 1, 1, 7)
     ligne.titre <- getCells(getRows(publi.sheet, rowIndex = 1))
-    invisible(lapply(ligne.titre, setCellStyle, cellStyle=CellStyle(wb, alignment = Alignment(h = "ALIGN_CENTER"))))
-    CB.setFill(cb.titre, fill = Fill(foregroundColor = "#22427C", backgroundColor = "green"), 1, 1:7)
-    CB.setFont(cb.titre, font = Font(wb, color="whitesmoke", isItalic = TRUE, isBold = TRUE), 1, 1:7)
+    # invisible(lapply(ligne.titre, setCellStyle, cellStyle=CellStyle(wb, alignment = Alignment(h = "ALIGN_CENTER"))))
+    # CB.setFill(cb.titre, fill = Fill(foregroundColor = "#22427C", backgroundColor = "green"), 1, 1:7)
+    # CB.setFont(cb.titre, font = Font(wb, color="whitesmoke", isItalic = TRUE, isBold = TRUE), 1, 1:7)
+    setRowHeight(getRows(publi.sheet, 1), multiplier = 2)
+    invisible(sapply(c(1,7), function(i){
+        setCellStyle(ligne.titre[[i]], CellStyle(wb) + Alignment(h = "ALIGN_CENTER", v="VERTICAL_CENTER") + Font(wb, isItalic = T, isBold = T))
+    }))
+    invisible(sapply(2:6, function(i){
+        setCellStyle(ligne.titre[[i]], CellStyle(wb) + Alignment(h = "ALIGN_CENTER", v="VERTICAL_CENTER") + Font(wb, isItalic = T, isBold = T, color = "whitesmoke") + Fill(foregroundColor = "#4F81BD"))
+    }))
+    
     
     CB.setRowData(cb.titre, c(
         "Scraping du",
-        "Détenteur de la position",
         "Nom de l'émetteur",
+        "Détenteur de la position",
         "% de la position",
         "Date de la position",
         "Type de position",

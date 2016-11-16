@@ -39,11 +39,26 @@ if ((system_date %>% as.character(.) %>% as.POSIXlt(.) %>% .$wday) == 1) {
 
 
 load(file = paste0("./docs_id/docs_id_", veille, ".RData"))# load docs_id_decla, docs_id_op, docs_id_seuils et docs_id_prospectus
-docs_id_veille_seuils <- data.frame(id = seq_along(docs_id_seuils), doc_id = docs_id_seuils)
-docs_id_veille_decla <- data.frame(id = seq_along(docs_id_decla), doc_id = docs_id_decla)
-docs_id_veille_opa <- data.frame(id = seq_along(docs_id_opa), doc_id = docs_id_opa)
-docs_id_veille_prospectus <- data.frame(id = seq_along(docs_id_prospectus), doc_id = docs_id_prospectus)
-
+docs_id_veille_seuils <- if(length(docs_id_seuils)>0){
+    data.frame(id = seq_along(docs_id_seuils), doc_id = docs_id_seuils)
+}else{
+    data.frame(id = c(1), doc_id = c("foo"))
+}
+docs_id_veille_decla <- if(length(docs_id_decla)>0){
+    data.frame(id = seq_along(docs_id_decla), doc_id = docs_id_decla)
+}else{
+    data.frame(id = c(1), doc_id = c("foo"))
+}
+docs_id_veille_opa <- if(length(docs_id_opa)>0){
+    data.frame(id = seq_along(docs_id_opa), doc_id = docs_id_opa)
+}else{
+    data.frame(id = c(1), doc_id = c("foo"))
+}
+docs_id_veille_prospectus <- if(length(docs_id_prospectus)>0){
+    data.frame(id = seq_along(docs_id_prospectus), doc_id = docs_id_prospectus)
+}else{
+    data.frame(id = c(1), doc_id = c("foo"))
+}
 #0-6 starting on Sunday
 if ((system_date %>% as.character(.) %>% as.POSIXlt(.) %>% .$wday) == 1) {
     #Are we Monday today?
