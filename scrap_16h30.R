@@ -25,6 +25,8 @@ library(dplyr)
 #   html_nodes("#titleCast .itemprop span") %>%
 #   html_text()
 
+
+
 system_date <-
     Sys.Date() #save multiple computations and prevents unexpected behavior in extremely rare case where the code runs from one day to another
 today <- format(system_date, "%Y-%m-%d")
@@ -38,27 +40,39 @@ if ((system_date %>% as.character(.) %>% as.POSIXlt(.) %>% .$wday) == 1) {
 }
 
 
-load(file = paste0("./docs_id/docs_id_", veille, ".RData"))# load docs_id_decla, docs_id_op, docs_id_seuils et docs_id_prospectus
-docs_id_veille_seuils <- if(length(docs_id_seuils)>0){
-    data.frame(id = seq_along(docs_id_seuils), doc_id = docs_id_seuils)
+if(file.exists(paste0("./docs_id/docs_id_", veille, ".RData"))){
+    # We obtain the past identifiers of scraped AMF documents
+    load(file = paste0("./docs_id/docs_id_", veille, ".RData"))# load docs_id_decla, docs_id_op, docs_id_seuils et docs_id_prospectus
+    docs_id_veille_seuils <- if(length(docs_id_seuils)>0){
+        data.frame(id = seq_along(docs_id_seuils), doc_id = docs_id_seuils)
+    }else{
+        data.frame(id = c(1), doc_id = c("foo"))
+    }
+    docs_id_veille_decla <- if(length(docs_id_decla)>0){
+        data.frame(id = seq_along(docs_id_decla), doc_id = docs_id_decla)
+    }else{
+        data.frame(id = c(1), doc_id = c("foo"))
+    }
+    docs_id_veille_opa <- if(length(docs_id_opa)>0){
+        data.frame(id = seq_along(docs_id_opa), doc_id = docs_id_opa)
+    }else{
+        data.frame(id = c(1), doc_id = c("foo"))
+    }
+    docs_id_veille_prospectus <- if(length(docs_id_prospectus)>0){
+        data.frame(id = seq_along(docs_id_prospectus), doc_id = docs_id_prospectus)
+    }else{
+        data.frame(id = c(1), doc_id = c("foo"))
+    }
 }else{
-    data.frame(id = c(1), doc_id = c("foo"))
+    # The scrap will be less restrictive
+    docs_id_veille_seuils <- data.frame(id = c(1), doc_id = c("foo"))
+    docs_id_veille_decla <- data.frame(id = c(1), doc_id = c("foo"))
+    docs_id_veille_opa <- data.frame(id = c(1), doc_id = c("foo"))
+    docs_id_veille_prospectus <- data.frame(id = c(1), doc_id = c("foo"))
 }
-docs_id_veille_decla <- if(length(docs_id_decla)>0){
-    data.frame(id = seq_along(docs_id_decla), doc_id = docs_id_decla)
-}else{
-    data.frame(id = c(1), doc_id = c("foo"))
-}
-docs_id_veille_opa <- if(length(docs_id_opa)>0){
-    data.frame(id = seq_along(docs_id_opa), doc_id = docs_id_opa)
-}else{
-    data.frame(id = c(1), doc_id = c("foo"))
-}
-docs_id_veille_prospectus <- if(length(docs_id_prospectus)>0){
-    data.frame(id = seq_along(docs_id_prospectus), doc_id = docs_id_prospectus)
-}else{
-    data.frame(id = c(1), doc_id = c("foo"))
-}
+
+
+# For formatting the AMF url
 #0-6 starting on Sunday
 if ((system_date %>% as.character(.) %>% as.POSIXlt(.) %>% .$wday) == 1) {
     #Are we Monday today?
@@ -153,7 +167,7 @@ if (!(seuils_current_page_results_number <= 0 |
                 amf_seuils_nodes[x] %>% strsplit(., " "))
         document_numbers <-
             sapply(1:length(document_numbers), function(x)
-                document_numbers[[x]][4] %>% sub("\\n.+", "", .))
+                document_numbers[[x]][52] %>% sub("\\n", "", .))
         
         current_doc_num <- data.frame(id=seq_along(document_numbers), doc_id = document_numbers)
         
@@ -170,7 +184,8 @@ if (!(seuils_current_page_results_number <= 0 |
             #fetching direct links
             jumpman <-
                 sapply(jumpman, function(x)
-                    x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .))
+                    x %>% read_html(.) %>% html_nodes(., xpath = "//div[@class='tabs-container']/descendant::*[@href]") %>% xml_attr(., "href") %>% paste0(amf_base_url, .)
+                )
             
             #fix case where more than one pdf are present
             if(is.matrix(jumpman))
@@ -182,13 +197,16 @@ if (!(seuils_current_page_results_number <= 0 |
             if (!isTRUE(file.info(date_path)$isdir)) 
                 dir.create(date_path, recursive=TRUE, mode = "0777")
             
-            invisible(sapply(1:length(jumpman), function(x)
-                download.file(
-                    jumpman[[x]][1],
-                    paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
-                    mode = "wb",
-                    quiet = TRUE
-                )))
+            invisible(sapply(
+                1:length(jumpman), 
+                function(x)
+                    download.file(
+                        jumpman[[x]][1],
+                        paste0(date_path, "/", document_titles[[x]][1], " - ", document_numbers[x], ".pdf"),
+                        mode = "wb",
+                        quiet = TRUE
+                    )
+            ))
             docs_id_seuils <- append(docs_id_seuils, document_numbers)
         }    
         
@@ -301,7 +319,7 @@ if (!(decla_current_page_results_number <= 0 |
                 amf_decla_nodes[x] %>% strsplit(., " "))
         document_numbers <-
             sapply(1:length(document_numbers), function(x)
-                document_numbers[[x]][4] %>% sub("\\n.+", "", .))
+                document_numbers[[x]][52] %>% sub("\\n", "", .))
         
         
         current_doc_num <- data.frame(id=seq_along(document_numbers), doc_id = document_numbers)
@@ -454,7 +472,7 @@ if (!(opa_current_page_results_number <= 0 |
                 amf_opa_nodes[x] %>% strsplit(., " "))
         document_numbers <-
             sapply(1:length(document_numbers), function(x)
-                document_numbers[[x]][4] %>% sub("\\n.+", "", .))
+                document_numbers[[x]][52] %>% sub("\\n", "", .))
         
         
         current_doc_num <- data.frame(id=seq_along(document_numbers), doc_id = document_numbers)
@@ -605,7 +623,7 @@ if (!(prospectus_current_page_results_number <= 0 |
                 amf_prospectus_nodes[x] %>% strsplit(., " "))
         document_numbers <-
             sapply(1:length(document_numbers), function(x)
-                document_numbers[[x]][4] %>% sub("\\n.+", "", .))
+                document_numbers[[x]][52] %>% sub("\\n", "", .))
         
         current_doc_num <- data.frame(id=seq_along(document_numbers), doc_id = document_numbers)
         
