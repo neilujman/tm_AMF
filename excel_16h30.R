@@ -131,13 +131,13 @@ if(NROW(extractedTexts_franchissement) > 0){
     nbLigne.today <- dim(result_seuil)[1]
     seuil.sheet$shiftRows(as.integer(1),as.integer(nbLigne-1),as.integer(nbLigne.today))
     nbCol.today <- dim(result_seuil)[2]
- 
+
     addDataFrame(result_seuil, seuil.sheet, startRow = 2, startColumn = 1, col.names = FALSE, row.names = FALSE)
-    
+
     cb.titre <- CellBlock(seuil.sheet, 1, 1, 1, 7)
     ligne.titre <- getCells(getRows(seuil.sheet, rowIndex = 1))
     invisible(lapply(ligne.titre, setCellStyle, cellStyle=CellStyle(wb, alignment = Alignment(h = "ALIGN_CENTER"))))
-  
+
     CB.setRowData(cb.titre, c(
         "Scraping du",
         "Valeur",
@@ -155,9 +155,9 @@ if(NROW(extractedTexts_franchissement) > 0){
     invisible(sapply(2:6, function(i){
         setCellStyle(ligne.titre[[i]], CellStyle(wb) + Alignment(h = "ALIGN_CENTER", v="VERTICAL_CENTER") + Font(wb, isItalic = T, isBold = T, color = "whitesmoke") + Fill(foregroundColor = "#4F81BD"))
     }))
-    
-    
- 
+
+
+
     invisible(sapply(2:(nbLigne.today+1), function(i){
         cells <- getCells(row = getRows(seuil.sheet, rowIndex = i), colIndex = 1:7)
         cs.2 <- if(i%%2==0) cs +  fill.blue + border.left + alignment.left else cs + fill.white + border.left + alignment.left
@@ -188,8 +188,8 @@ if(NROW(extractedTexts_franchissement) > 0){
     invisible(sapply(1:7,function(i, largeurs){
         setColumnWidth(seuil.sheet, colIndex = i, colWidth = largeurs[i])
     },largeurs=c(15,35,45,35,20,20,64)))
-    
- 
+
+
 }
 
 # ===============================

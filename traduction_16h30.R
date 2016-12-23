@@ -3,7 +3,7 @@ library(translateR)
 library(xlsx)
 library(stringr)
 library(stringi)
-
+library(sqldf)
 # foo <- translate(dataset = result_seuil, content.field = "crossing", source.lang = fr, target.lang = en)
 # 
 
@@ -48,7 +48,7 @@ trad.declarant <- function(str){
                 "President-Directeur general" = str_replace(str, "Pr.sident.Directeur g.n.ral", "Chief Executive Officer"),
                 "President-Directeur General" = {str_replace(str, pattern ="Pr.sident.Directeur G.n.ral", replacement = "Chief Executive Officer")},
                 "President Directeur General" = str_replace(str, "Pr.sident Directeur G.n.ral", "Chief Executive Officer"),
-                "PDG" = str_replace(str, "PDG", "Chief Executif Officer"),
+                "PDG" = str_replace(str, "PDG", "Chief Executive Officer"),
                 "Vice-President Executif" = str_replace(str, "Vice-Pr.sident Ex.cutif", "Executive VP"),
                 "President du Conseil de Surveillance" = str_replace(str, "President du Conseil de Surveillance", "Chairman of the Supervisory Board"),
                 "President du conseil de surveillance" = str_replace(str, "President du conseil de surveillance", "Chairman of the Supervisory Board"),
@@ -76,7 +76,7 @@ trad.declarant <- function(str){
                 }
             )
         },{
-            strad <- switch(
+            str.trad <- switch(
                 EXPR = str_extract(str, reg.declarant),
                 "Société anonyme" = {stri_replace_all_regex(
                     str,
@@ -101,6 +101,27 @@ trad.declarant <- function(str){
     return(str.trad)
 }
 
+
+trad.declarant2 <- function(str){
+    str.trad <- stri_replace_all_regex(
+        str,
+        c("CONSEIL DE SURVEILLANCE", "personne liee a", "Membre du Conseil d'administration", "ADMINISTRATRICE", "Pr.sident du Conseil d'Administration", "Pr.sident du Directoire", "Membre du conseil de surveillance", "G.rant", "g.rant", "President directeur general", "Directeur General", "PRESIDENT CONSEIL DE SURVEILLANCE", "Membre Conseil Administration", "Administrateur", "Directeur general Industrie", "directeur general industrie", "societe anonyme de droit espagnol", "SOCIETE CIVILE", "Directeur du Contr.le General", "Personne morale", "Pr.sident du conseil", "Directeur general strategie", "Membre Conseil surveillance", "membre du Conseil de surveillance", "Financement par mon.tisation", "Bons de souscription d'actions"),
+        c("Supervisory Board", "person related to", "Board Member", "Administrator", "Chairman of the Board", "President of the Board", "Member of the supervisory board", "Manager", "Manager", "Chief Executive Officer", "Managing Director", "Chairman of the Supervisory Board", "Board Member", "Administrator", "Industry Chief Executive", "Industry Chief Executive", "spanish limited company", "civil society", "General Inspection Director", "Moral person", "Board Chairman", "Strategy Deputy General Manager", "Member of the supervisory board", "Member of the Supervisory Board", "Monetization funding", "Stock subscription warrants"),
+        vectorize_all = F
+    )
+    return(str.trad)
+}
+
+
+# pour les mots de liaison
+trad.declarant3 <- function(str){
+    str.trad <- stri_replace_all_regex(
+        str,
+        c(" et ", " d'", " de "),
+        c(" and ", " of ", " of "),
+        vectorize_all = F
+    )
+}
 
 trad.instru <- function(str){
     str.trad <- str
@@ -197,6 +218,8 @@ if(NROW(extractedTexts_modele2) > 0){
     result_manage <- result_decla
     
     temp <- sapply(result_decla$declarant, trad.declarant)
+    temp <- sapply(temp, trad.declarant2)
+    temp <- sapply(temp, trad.declarant3)
     names(temp) <- NULL
     result_manage$declarant <- temp
     
@@ -211,6 +234,9 @@ if(NROW(extractedTexts_modele2) > 0){
         vectorize = FALSE
     )
     
+    
+    #sqldf('select * from result_manage order by valeur ASC')
+    result_manage <- result_manage[order(result_manage$valeur),]
     
     addDataFrame(result_manage, manage.sheet, col.names = FALSE, row.names = FALSE, startRow = 2, startColumn = 1)
     # for(i in 1:dim(result_manage)[1]){
@@ -296,17 +322,17 @@ if(NROW(extractedTexts_franchissement) > 0){
     nbCols <- 7
     title.line <- getRows(reg.sheet, rowIndex = 1)
     cells <- getCells(title.line, colIndex = 1:nbCols)
-    
-    invisible(lapply(cells, setCellStyle, cellStyle=CellStyle(wb.eng) + 
-                         Alignment(h = "ALIGN_CENTER", v="VERTICAL_CENTER", wrapText = TRUE) + 
-                         Font(wb.eng, isItalic = T, isBold = T, color = "whitesmoke") + 
+
+    invisible(lapply(cells, setCellStyle, cellStyle=CellStyle(wb.eng) +
+                         Alignment(h = "ALIGN_CENTER", v="VERTICAL_CENTER", wrapText = TRUE) +
+                         Font(wb.eng, isItalic = T, isBold = T, color = "whitesmoke") +
                          Fill(foregroundColor = "#4F81BD")))
     setRowHeight(title.line, multiplier = 2)
     invisible(sapply(1:nbCols,
                      function(i, cells, cs){
                          setCellValue(cells[[i]], cs[i])
                      },
-                     cells = cells, 
+                     cells = cells,
                      cs = c(
                          "Scraping of",
                          "Company Name", "Declarant", "Crossed Threshold(s)",
@@ -315,15 +341,15 @@ if(NROW(extractedTexts_franchissement) > 0){
     invisible(sapply(1:nbCols,function(i, largeurs){
         setColumnWidth(reg.sheet, colIndex = i, colWidth = largeurs[i])
     },largeurs=c(15,35,45,35,20,20,64)))
-    
-    
+
+
     nbLigne <- reg.sheet$getLastRowNum()+1
     nbLigne.today <- dim(result_seuil)[1]
     reg.sheet$shiftRows(as.integer(1), as.integer(nbLigne-1), as.integer(nbLigne.today))
-    
-    
+
+
     result_reg <- result_seuil
-    
+
     result_reg$threshold_crossed <- sapply(result_reg$threshold_crossed, trad.threshold)
     result_reg$crossing <- sapply(result_reg$crossing, trad.crossing)
     result_reg$crossing_date <- stri_replace_all_regex(
@@ -332,18 +358,23 @@ if(NROW(extractedTexts_franchissement) > 0){
         c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
         vectorize = FALSE
     )
-    
+
+
+    # sqldf(`select * from result_reg order by companies ASC`)
+    result_reg <- result_reg[order(result_reg$companies),]
+
+
     addDataFrame(result_reg, reg.sheet, col.names = FALSE, row.names = FALSE, startRow = 2)
-    
+
     invisible(sapply(2:(nbLigne.today+1), function(i){
         cells <- getCells(row = getRows(reg.sheet, rowIndex = i), colIndex = 1:7)
-        cs.2 <- if(i%%2==0) 
+        cs.2 <- if(i%%2==0)
             cs +  fill.blue + border.left + alignment.left + Font(wb.eng, isBold=T, color = switch(
                 EXPR = getCellValue(cells[[5]]),
                 "Increase" = {"darkgreen"},
                 "Decrease" = {"#C60800"},
-                {"#000000"})) 
-        else 
+                {"#000000"}))
+        else
             cs + fill.white + border.left + alignment.left + Font(wb.eng, isBold=T, color = switch(
                 EXPR = getCellValue(cells[[5]]),
                 "Increase" = {"darkgreen"},
@@ -373,12 +404,12 @@ if(NROW(extractedTexts_franchissement) > 0){
         cs.6 <- if(i%%2==0) cs + fill.blue + border.right + alignment.center else cs + fill.white + border.right + alignment.center
         setCellStyle(cells[[6]], cs.6)
     }))
-    
+
     #df <- read.xlsx("extracted_texts/BD-AMF.xlsx", sheetIndex=2, startRow = 2)
-    
-    
+
+
     #result_reg <- result_seuil
-    
+
 }
 
 # --------------------------------------------------
@@ -452,6 +483,10 @@ if(NROW(extractedTexts_position) > 0){
         }
     )
     
+    
+    # sqldf(`select * from result_short order by emetteur asc`)
+    result_short <- result_short[order(result_short$emetteur),]
+    
     addDataFrame(result_short, short.sheet, col.names = FALSE, row.names = FALSE, startRow = 2)
     
     
@@ -467,10 +502,10 @@ if(NROW(extractedTexts_position) > 0){
         setCellStyle(cells[[3]], cs.3)
         cs.4 <- if(i%%2==0) cs + fill.blue + border.middle + alignment.center else cs + fill.white + border.middle + alignment.center
         setCellStyle(cells[[4]], cs.4)
-        cs.5 <- if(i%%2==0) cs + fill.blue + border.middle + alignment.center else cs + fill.white + border.middle + alignment.center
+        cs.5 <- if(i%%2==0) cs + fill.blue + border.right + alignment.center else cs + fill.white + border.right + alignment.center
         setCellStyle(cells[[5]], cs.5)
-        cs.6 <- if(i%%2==0) cs + fill.blue + border.right + alignment.left else cs + fill.white + border.right + alignment.left
-        setCellStyle(cells[[6]], cs.6)
+        # cs.6 <- if(i%%2==0) cs + fill.blue + border.right + alignment.left else cs + fill.white + border.right + alignment.left
+        # setCellStyle(cells[[6]], cs.6)
     }))
 }
 
